@@ -1,0 +1,47 @@
+<html>
+<head>
+<title>POST test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="./jquery-1.8.3.min.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+
+        $(function(){
+                $("#myButton").click(
+                        function(){
+                                $.ajax({
+                                        type: "POST",
+                                        url: "http://localhost:57939/",
+                                        data: $("#json_com").val(),
+                                        contentType: "application/json",
+                                        dataType: "json",
+                                        timeout: 10000, // msec
+                                        success: function(response){
+                                                //alert( "SUCCESS: " + response.version );
+                                                $("#version").text( "jsonrpc: " + response.jsonrpc );
+                                                $("#result").text( "result: " + response.result );
+                                                $("#status").text( "OK" );
+                                        },
+                                        error: function(response){
+                                                //alert( "ERROR: " + response );
+                                                $("#status").text( "NG" );
+                                        }
+                                });
+                        }
+
+                );
+        });
+//]]>
+</script>
+</head>
+
+<body>
+        <button id="myButton">raw data</button>
+
+        <textarea id="json_com" cols="80" rows="10">{"version": "2.0", "method":"rawDataRecord","params":{"watchID":1022,"data":[{"name":"CPU","num":13,"timestamp":"2013-05-21 13:00:00"}],"priority":3},"id": 2}</textarea>
+        <p id="version"></p>
+        <p id="result"></p>
+        <p id="status"></p>
+</body></html>
+
+

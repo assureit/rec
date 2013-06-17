@@ -1,0 +1,22 @@
+extends base
+
+block content
+        table(border=2)
+            tr
+                th nodeID
+                th watchID
+                th presetID
+                th name
+                th params
+            for data,index in item_list
+                -var className='list_odd';
+                if(index % 2) == 0
+                    -className='list_even';
+                else
+                tr(class='#{className}')
+                    td(align='center') #{data.nodeID}
+                    td(align='center') #{data.watchID}
+                    td(align='center') #{data.presetID}
+                    td #{data.name}
+                    td #{data.params}
+  

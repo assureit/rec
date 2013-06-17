@@ -1,0 +1,42 @@
+extends layout
+
+block header
+    form(action="/#{url}", method="post")
+        table
+            tr
+                td(width=100)
+                    a(href='/rawDataList') rawデータ
+                td(width=100)
+                    a(href='/rawItemList') rawアイテム
+                td(width=100)
+                    a(href='/presetlist') プリセット
+                td(width=100)
+                    a(href='/monitorlist') モニタ
+                td(width=100)
+                    a(href='/evidencelist') エビデン
+ 
+        br
+        span(class='title') #{title}
+        br
+        br
+        table
+            tr
+                td データ数合計&nbsp;#{totalList}件（#{page*limit+1}-#{page*limit+item_list.length}を表示）
+                td &nbsp;&nbsp;
+                td
+                    a(href='/#{url}') 最新情報に更新
+                td &nbsp;&nbsp;
+                td  
+                    pageCount = totalList/limit;
+                    if pageCount>1 
+                        -for(var count=0 ; count<pageCount ; count++)
+                            if count==page
+                                [#{count+1}]&nbsp;
+                            else
+                                a(href='/#{url}?page=#{count+1}') [#{count+1}]
+                                &nbsp;
+                td &nbsp;&nbsp;
+                td 
+                    input(type='submit', value='DownLoad')
+block content
+
