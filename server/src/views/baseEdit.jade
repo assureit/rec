@@ -26,24 +26,7 @@ block header
         span(class='title') #{title}
         br
         br
-        table
-            tr
-                td データ数合計&nbsp;#{totalList}件（#{page*limit+1}-#{page*limit+item_list.length}を表示）
-                td &nbsp;&nbsp;
-                td
-                    a(href='#{site}#{url}') 最新情報に更新
-                td &nbsp;&nbsp;
-                td  
-                    pageCount = totalList/limit;
-                    if pageCount>1 
-                        -for(var count=0 ; count<pageCount ; count++)
-                            if count==page
-                                [#{count+1}]&nbsp;
-                            else
-                                a(href='#{site}#{url}?page=#{count+1}') [#{count+1}]
-                                &nbsp;
-                td &nbsp;&nbsp;
-                td 
-                    input(type='submit', value='DownLoad')
+        div(class='error_text') #{error_msg}
+
 block content
 

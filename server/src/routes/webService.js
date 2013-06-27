@@ -3,4 +3,5 @@ exports.rawItem = require('./rawItem');
 exports.monitor = require('./monitor');
 exports.preset = require('./preset');
 exports.evidence = require('./evidence');
+exports.recoveryevi = require('./recoveryevi');
 

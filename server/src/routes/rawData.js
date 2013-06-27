@@ -20,38 +20,34 @@ exports.list = function (req, res) {
         }
 
         // rawデータリスト取得API
-        db = new mongo.Db(Const.DB_NAME, new mongo.Server(Const.DB_IP, Const.DB_PORT), {safe:false});
-        db.open(function (err, db) {
-            if (!err) {
-                var where = null;
-                var order = { rawID: -1 };      // -1:desc 1:asc
-                db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
-                    collection.find(where).count(function (err, count) {
-                        totalList = count;
-                        collection.find(where, { _id: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
-                            if (err) {
-                                console.log('error: An error has occurred');
-                                throw err;
-                            } else {
-                                //console.log(JSON.stringify(item_list));
-                                var count = item_list.length;
-                                res.render('rawDataList', {
-                                    title: 'rawデータ一覧',
-                                    url: 'rawDataList',
-                                    totalList: totalList,
-                                    page: nowPage,
-                                    limit: pageLimit,
-                                    item_list: item_list
-                                });
-                            }
+        var key = null;
+        var order = { _id: -1 };      // -1:desc 1:asc
+        db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
+            collection.find(key).count(function (err, count) {
+                totalList = count;
+                collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
+                    if (err) {
+                        console.log('error: An error has occurred');
+                        throw err;
+                    } else {
+                        //console.log(JSON.stringify(item_list));
+                        var count = item_list.length;
+                        res.render('rawDataList', {
+                            title: 'rawデータ一覧',
+                            site: Const.SITE,
+                            url: 'rawDataList',
+                            totalList: totalList,
+                            page: nowPage,
+                            limit: pageLimit,
+                            item_list: item_list
                         });
-                    });
+                    }
                 });
-            }
+            });
         });
     } catch (e) {
         res.render('rawDataList', { title: 'error' });
-        console.log("失敗：" + e.Message);
+        console.log("失敗：" + e);
     }
 };
 
@@ -60,34 +56,29 @@ exports.download = function (req, res) {
     try {
         console.log("---- download RawData ----");
 
-        db = new mongo.Db(Const.DB_NAME, new mongo.Server(Const.DB_IP, Const.DB_PORT), {safe:false});
-        db.open(function (err, db) {
-            if (!err) {
-                var order = { rawID: -1 };      // -1:desc 1:asc
-                db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
-                    collection.find(null, { _id: 0 }).sort(order).toArray(function (err, item_list) {
-                        if (err) {
-                            console.log('error: An error has occurred');
-                            throw err;
-                        } else {
-                            // データダウンロード
-                            res.statusCode = 200;
-                            var filename = Const.DB_TABLE_RAWDATA + '_' + Const.getDateString() +'.json';
-                            res.set('Content-Disposition','attachment; filename="' + filename + '"');
-                            res.setHeader('Content-Type', 'text/json; charset=utf8');
+        var order = { _id: -1 };      // -1:desc 1:asc
+        db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
+            collection.find(null, { _id: 0, entrytime: 0 }).sort(order).toArray(function (err, item_list) {
+                if (err) {
+                    console.log('error: An error has occurred');
+                    throw err;
+                } else {
+                    // データダウンロード
+                    res.statusCode = 200;
+                    var filename = Const.DB_TABLE_RAWDATA + '_' + Const.getDateString() +'.json';
+                    res.set('Content-Disposition','attachment; filename="' + filename + '"');
+                    res.setHeader('Content-Type', 'text/json; charset=utf8');
                             
-                            res.write( JSON.stringify(item_list) );
-                            //item_list.forEach(function(item) {
-                            //    res.write( JSON.stringify(item) + '\n' );
-                            //});
-                            res.end();
-                        }
-                    });
-                });
-            }
+                    res.write( JSON.stringify(item_list) );
+                    //item_list.forEach(function(item) {
+                    //    res.write( JSON.stringify(item) + '\n' );
+                    //});
+                    res.end();
+                }
+            });
         });
     } catch (e) {
-        console.log("download error：" + e.Message);
+        console.log("download error：" + e);
     }
 }
 

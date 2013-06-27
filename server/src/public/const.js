@@ -9,15 +9,19 @@ exports.DB_TABLE_RAWITEM = 'raw_item';
 exports.DB_TABLE_MONITOR = 'monitor';
 exports.DB_TABLE_PRESET = 'preset';
 exports.DB_TABLE_EVIDENCE = 'evidence';
+exports.DB_TABLE_RECOVERY = 'recovery_evi';
 
 // WEB表示
 exports.LIST_LIMIT = 20;
+exports.SITE = '/api/1.0/';
+
+exports.WATCH_INTERVAL = 10;     // minutes
 
 // 日付文字列の取得 [YYYYMMDDHH24MISS]
 exports.getDateString = function() {
     var date = new Date();
     var m = date.getMonth() + 1;
-    var d = date.getDay();
+    var d = date.getDate();
     var h = date.getHours();
     var mi = date.getMinutes();
     var s = date.getSeconds();
@@ -29,6 +33,12 @@ exports.getDateString = function() {
     if (s < 10) s = '0' + s;
     var dateStr = date.getFullYear() + m + d + h + mi + s;
     return dateStr;
+};
+
+// 日付文字列の取得 [unixtime]
+exports.getUnixtimeString = function() {
+    var dateStr = Math.floor(new Date/1000);
+    return String(dateStr);
 };
 
 // 日時文字列(ISO8601)の取得
@@ -47,6 +57,5 @@ exports.getIsoDateString = function() {
     if (s < 10) s = '0' + s;
 
     var dateStr = date.getFullYear() + '-' + m + '-' + d + 'T' + h + ':' + mi + ':' + s + 'Z';
-    console.log('dateStr : ' + dateStr);
     return dateStr;
 };

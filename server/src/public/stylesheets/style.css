@@ -20,3 +20,9 @@ tr.list_even {
 tr.list_odd {
     background-color: #ffffff
 }
+
+div.error_text {
+    color: #f00;
+    font-size: medium;
+    font-weight: bold;
+}

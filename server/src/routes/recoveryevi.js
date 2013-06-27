@@ -1,11 +1,12 @@
 var http = require('http');
 var url = require('url');
+var mongo = require('mongodb');
 var Const = require('../public/const');
 
 // エビデンスリスト表示
 exports.list = function (req, res) {
     try {
-        console.log("load evidenceList");
+        console.log("load recoveryeviList");
         var result_val = null;
         var totalList = 0;
         var nowPage = 0;
@@ -17,10 +18,10 @@ exports.list = function (req, res) {
             nowPage = query_page - 1;
         }
 
-        // エビデンスリスト取得API
+        // リカバリスクリプトエビデンス取得
         var key = null;
         var order = { _id: -1 };      // -1:desc 1:asc
-        db.collection(Const.DB_TABLE_EVIDENCE, function (err, collection) {
+        db.collection(Const.DB_TABLE_RECOVERY, function (err, collection) {
             collection.find(key).count(function (err, count) {
                 totalList = count;
                 collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
@@ -30,10 +31,10 @@ exports.list = function (req, res) {
                     } else {
                         //console.log(JSON.stringify(item_list));
                         var count = item_list.length;
-                        res.render('evidenceList', {
-                            title: 'エビデンス一覧',
+                        res.render('recoveryeviList', {
+                            title: 'リカバリスクリプトエビデンス一覧',
                             site: Const.SITE,
-                            url: 'evidenceList',
+                            url: 'recoveryeviList',
                             totalList: totalList,
                             page: nowPage,
                             limit: pageLimit,
@@ -44,7 +45,7 @@ exports.list = function (req, res) {
             });
         });
     } catch (e) {
-        res.render('evidenceList', { title: 'error' });
+        res.render('recoveryeviList', { title: 'error' });
         console.log("失敗：" + e);
     }
 };
@@ -52,10 +53,10 @@ exports.list = function (req, res) {
 // ダウンロード
 exports.download = function (req, res) {
     try {
-        console.log("---- download evidence ----");
+        console.log("---- download recoveryeviList ----");
 
         var order = { _id: -1 };      // -1:desc 1:asc
-        db.collection(Const.DB_TABLE_EVIDENCE, function (err, collection) {
+        db.collection(Const.DB_TABLE_RECOVERY, function (err, collection) {
             collection.find(null, { _id: 0, entrytime: 0 }).sort(order).toArray(function (err, item_list) {
                 if (err) {
                     console.log('error: An error has occurred');
@@ -63,7 +64,7 @@ exports.download = function (req, res) {
                 } else {
                     // データダウンロード
                     res.statusCode = 200;
-                    var filename = Const.DB_TABLE_EVIDENCE + '_' + Const.getDateString() +'.json';
+                    var filename = Const.DB_TABLE_RECOVERY + '_' + Const.getDateString() +'.json';
                     res.set('Content-Disposition','attachment; filename="' + filename + '"');
                     res.setHeader('Content-Type', 'text/json; charset=utf8');
                             

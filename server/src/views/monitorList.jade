@@ -1,8 +1,10 @@
 extends base
 
 block content
+    form(action="#{site}#{url2}", method="post")
         table(border=2)
             tr
+                th 
                 th nodeID
                 th watchID
                 th presetID
@@ -13,10 +15,24 @@ block content
                 if(index % 2) == 0
                     -className='list_even';
                 else
-                tr(class='#{className}')
+                tr(class='#{className}',onclick='clickCell(#{index});')
+                    td 
+                        input(type='radio', name='selid', value='#{data._id}')
                     td(align='center') #{data.nodeID}
                     td(align='center') #{data.watchID}
                     td(align='center') #{data.presetID}
                     td #{data.name}
                     td #{data.params}
+          table
+            tr
+                td 
+                    input(type='button', value='追加',onclick='addView("#{url2}");')
+                td &nbsp;&nbsp;
+                td 
+                    input(type='button', value='変更',onclick='updateView("#{url2}");')
+                td &nbsp;&nbsp;
+                td 
+                    input(type='button', value='削除',onclick='deleteView("#{url2}");')
+                td &nbsp;&nbsp;
+                    input(type='text', value='', name='editType', style='display:none')
   
