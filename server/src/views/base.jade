@@ -1,0 +1,49 @@
+extends layout
+
+block header
+    form(action="#{site}#{url}", method="post")
+        table
+            tr
+                td
+                    a(href='#{site}monitorlist') モニタ一覧
+                td &nbsp;&nbsp;
+                td
+                    a(href='#{site}rawItemList') rawアイテム一覧
+                td &nbsp;&nbsp;
+                td
+                    a(href='#{site}presetlist') プリセット一覧
+                td &nbsp;&nbsp;
+                td
+                    a(href='#{site}rawDataList') rawデータ一覧
+                td &nbsp;&nbsp;
+                td
+                    a(href='#{site}evidencelist') エビデン一覧
+                td &nbsp;&nbsp;
+                td
+                    a(href='#{site}recoveryevilist') リカバリスクリプトエビデンス一覧
+ 
+        br
+        span(class='title') #{title}
+        br
+        br
+        table
+            tr
+                td データ数合計&nbsp;#{totalList}件（#{page*limit+1}-#{page*limit+item_list.length}を表示）
+                td &nbsp;&nbsp;
+                td
+                    a(href='#{site}#{url}') 最新情報に更新
+                td &nbsp;&nbsp;
+                td  
+                    pageCount = totalList/limit;
+                    if pageCount>1 
+                        -for(var count=0 ; count<pageCount ; count++)
+                            if count==page
+                                [#{count+1}]&nbsp;
+                            else
+                                a(href='#{site}#{url}?page=#{count+1}') [#{count+1}]
+                                &nbsp;
+                td &nbsp;&nbsp;
+                td 
+                    input(type='submit', value='DownLoad')
+block content
+

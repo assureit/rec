@@ -1,0 +1,41 @@
+extends baseEdit
+
+block content
+    form(action="#{site}#{url2}", method="post")
+          table
+            tr
+                td nodeID
+                -if(nodeID == '') {
+                td 
+                    input(type='text', value='#{nodeID}', name='nodeID', size='80')
+                -} else {
+                td 
+                    input(type='text', value='#{nodeID}', name='nodeID', size='80', readonly="readonly")
+                -}
+            tr
+                td watchID
+                td 
+                    input(type='text', value='#{watchID}', name='watchID', size='80')
+            tr
+                td presetID
+                td 
+                    input(type='text', value='#{presetID}', name='presetID', size='80')
+            tr
+                td name
+                td 
+                    input(type='text', value='#{name}', name='name', size='80')
+            tr
+                td params
+                td 
+                    input(type='text', value='#{params}', name='params', size='80')
+          table
+            tr
+                td 
+                    input(type='button', value='実行',onclick='editExecute();')
+                td &nbsp;&nbsp;
+                td 
+                    input(type='button', value='戻る',onclick='retList("#{url}");')
+                td &nbsp;&nbsp;
+                    input(type='text', value='#{editType}', name='editType', style='display:none')
+                    input(type='text', value='#{selid}', name='selid', style='display:none')
+
