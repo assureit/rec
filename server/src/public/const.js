@@ -15,7 +15,7 @@ exports.DB_TABLE_RECOVERY = 'recovery_evi';
 exports.LIST_LIMIT = 20;
 exports.SITE = '/api/1.0/';
 
-exports.WATCH_INTERVAL = 10;     // minutes
+exports.WATCH_INTERVAL = 1;     // minutes
 
 // 日付文字列の取得 [YYYYMMDDHH24MISS]
 exports.getDateString = function() {
