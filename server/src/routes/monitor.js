@@ -20,6 +20,7 @@ function displist(req, res) {
 
         // モニタ取得API
         var key = null;
+        var queryStr = "";
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
             collection.find(key).count(function (err, count) {
@@ -39,7 +40,8 @@ function displist(req, res) {
                             totalList: totalList,
                             page: nowPage,
                             limit: pageLimit,
-                            item_list: item_list
+                            item_list: item_list,
+                            queryStr: queryStr
                         });
                     }
                 });
@@ -127,7 +129,7 @@ exports.edit = function (req, res) {
                             watchID: item.watchID,
                             presetID: item.presetID,
                             name: item.name,
-                            params: item.params,
+                            params: JSON.stringify(item.params),
                             error_msg: ''
                         });
                     }
@@ -176,7 +178,7 @@ function registMonitor(req, res) {
                         error_msg: 'nodeID は既に登録されています。 '
                     });
                 } else {
-                    var data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: params_val };
+                    var data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: JSON.parse(params_val) };
                     console.log('regist Monitor: ' + JSON.stringify(data));
                     collection.insert(data, { safe: true }, function (err, result) {
                         if (err) {
@@ -207,7 +209,7 @@ function updateMonitor(req, res) {
     console.log('update Monitor: ' + JSON.stringify(req.body.selid));
     db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
         var key = { _id: objectId };
-        var data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: params_val };
+        var data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: JSON.parse(params_val) };
         collection.update(key, data, { safe: true }, function (err, result) {
             if (err) {
                 console.log('Error update monitor: ' + err);

@@ -20,6 +20,13 @@ exports.list = function (req, res) {
 
         // リカバリスクリプトエビデンス取得
         var key = null;
+        var queryStr = "";
+        var selNodeID = url.parse(req.url, true).query.nodeID;
+        if (selNodeID != undefined) {
+            key = { nodeID: selNodeID };
+            queryStr = 'nodeID=' + selNodeID;
+            console.log('nodeID: ' + JSON.stringify(key));
+        }
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_RECOVERY, function (err, collection) {
             collection.find(key).count(function (err, count) {
@@ -38,7 +45,8 @@ exports.list = function (req, res) {
                             totalList: totalList,
                             page: nowPage,
                             limit: pageLimit,
-                            item_list: item_list
+                            item_list: item_list,
+                            queryStr: queryStr
                         });
                     }
                 });

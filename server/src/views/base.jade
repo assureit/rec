@@ -1,26 +1,26 @@
 extends layout
 
 block header
-    form(action="#{site}#{url}", method="post")
+    form(action="/rec#{site}#{url}", method="post")
         table
             tr
                 td
-                    a(href='#{site}monitorlist') モニタ一覧
+                    a(href='/rec#{site}monitorlist') モニタ一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}rawItemList') rawアイテム一覧
+                    a(href='/rec#{site}rawItemList') rawアイテム一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}presetlist') プリセット一覧
+                    a(href='/rec#{site}presetList') プリセット一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}rawDataList') rawデータ一覧
+                    a(href='/rec#{site}rawDataList') rawデータ一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}evidencelist') エビデン一覧
+                    a(href='/rec#{site}evidenceList') エビデンス一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}recoveryevilist') リカバリスクリプトエビデンス一覧
+                    a(href='/rec#{site}recoveryeviList') リカバリスクリプトエビデンス一覧
  
         br
         span(class='title') #{title}
@@ -31,17 +31,32 @@ block header
                 td データ数合計&nbsp;#{totalList}件（#{page*limit+1}-#{page*limit+item_list.length}を表示）
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}#{url}') 最新情報に更新
+                    a(href='/rec#{site}#{url}?#{queryStr}') 最新情報に更新
                 td &nbsp;&nbsp;
                 td  
-                    pageCount = totalList/limit;
+                    pageCount = (totalList-1)/limit;
+                    sOmis = '･･･';
+                    eOmis = '･･･';
+                    sPage = page - 4;
+                    if sPage<0
+                        sPage = 0;
+                        sOmis = '';
+                    ePage = page + 5;
+                    if ePage>=pageCount
+                        ePage = pageCount;
+                        eOmis = '';
                     if pageCount>1 
-                        -for(var count=0 ; count<pageCount ; count++)
+                        a(href='/rec#{site}#{url}?page=#{1}&#{queryStr}') [先頭]
+                        &nbsp;
+                        font #{sOmis}
+                        -for(var count=sPage ; count<ePage ; count++)
                             if count==page
                                 [#{count+1}]&nbsp;
                             else
-                                a(href='#{site}#{url}?page=#{count+1}') [#{count+1}]
+                                a(href='/rec#{site}#{url}?page=#{count+1}&#{queryStr}') [#{count+1}]
                                 &nbsp;
+                         font #{eOmis}
+                         a(href='/rec#{site}#{url}?page=#{parseInt(pageCount+1)}&#{queryStr}') [最終]
                 td &nbsp;&nbsp;
                 td 
                     input(type='submit', value='DownLoad')

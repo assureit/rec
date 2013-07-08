@@ -1,4 +1,5 @@
 var mongo = require('mongodb');
+var async = require('async');
 var Const = require('../public/const');
 
 exports.getJsonData = function (req, res) {
@@ -7,7 +8,14 @@ exports.getJsonData = function (req, res) {
         var result_val = null;
         var method_val = req.body.method;
         console.log("■ method=" + method_val);
- 
+
+        res.contentType('application/json');
+        if (req.body.jsonrpc !== '2.0') {
+            var msg = 'JSON RPC version is invalid or missiong';
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_REQUEST, message: msg }, id: id_val }), Const.HTTP_STATUS_BAD_REQUEST)
+            return;
+        }
+
         if (method_val == "rawDataRecord") {
             // rawデータ記録API
             addRawData(req, res);
@@ -34,13 +42,14 @@ exports.getJsonData = function (req, res) {
             deleteMonitor(req, res);
         } else {
             // ないAPI？
-            throw "unkown function :" + method_val;
+            msg = "unkown function :" + method_val;
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_METHOD_NOT_FOUND, message: msg }, id: id_val }), Const.HTTP_STATUS_NOT_FOUND)
+            return;
         }
 
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (getJsonData)：" + e);
     }
 };
 
@@ -50,14 +59,22 @@ function addRawData(req, res) {
         var id_val = req.body.id;
         var params_val = req.body.params;
         var timestamp_val = Const.getIsoDateString();
+        if (params_val == null || params_val.data == null || params_val.data == undefined || params_val.data == "") {
+            var msg = "There is no data in 'rawDataRecord'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
         var watchID_val = params_val.watchID;
-        if (watchID_val == null || watchID_val == undefined) {
-            throw "There is no watchID in 'rawDataRecord'.";
+        if (watchID_val == null || watchID_val == undefined || watchID_val == "") {
+            var msg = "There is no watchID in 'rawDataRecord'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
         }
         var rawID_val = watchID_val + Const.getUnixtimeString();
         var datas_val = params_val.data;
+        datas_val = (datas_val instanceof Array) ? datas_val : [datas_val];
         var priority_val = params_val.priority;
-        if (priority_val == null || priority_val == undefined) {
+        if (priority_val == null || priority_val == undefined || priority_val == "") {
             priority_val = 0;
         }
 
@@ -71,12 +88,11 @@ function addRawData(req, res) {
                     doc = { rawID: rawID_val, watchID: watchID_val, timestamp: timestamp_val, data: data_val, priority: priority_val, entrytime: new Date() };
                     collection.insert(doc, { safe: true }, function (err, result) {
                         if (err) {
-                        console.log('error: An error has occurred :' + err);
-                            res.contentType('application/json');
-                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: "-1", message: err }, id: id_val }))
+                            console.log('error: An error has occurred :' + err);
+                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                            return;
                         } else {
                             //console.log('Success: ' + JSON.stringify(result[0]));
-                            res.contentType('application/json');
                             res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
                         }
                     });
@@ -84,9 +100,8 @@ function addRawData(req, res) {
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+        console.log("失敗 (addRawData)：" + e);
     }
     
 };
@@ -97,8 +112,10 @@ function addEvidence( req, res ) {
         var id_val = req.body.id;
         var params_val = req.body.params;
         var nodeID_val = params_val.nodeID;
-        if (nodeID_val == null || nodeID_val == undefined) {
-            throw "There is no nodeID.";
+        if (nodeID_val == null || nodeID_val == undefined || nodeID_val == "") {
+            var msg = "There is no nodeID.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
         }
 
         var evidenceID_val = nodeID_val + Const.getUnixtimeString();
@@ -114,20 +131,17 @@ function addEvidence( req, res ) {
                 collection.insert(doc, { safe: true }, function (err, result) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
                         //console.log('Success: ' + JSON.stringify(result[0]));
-                        res.contentType('application/json');
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (addEvidence)：" + e);
     }
 };
 
@@ -136,12 +150,19 @@ function addResultData( req, res ) {
     try {
         var id_val = req.body.id;
         var params_val = req.body.params;
-        var monitorID_val = params_val.monitorID;
-        if (monitorID_val == null || monitorID_val == undefined) {
-            throw "There is no monitorID in 'resultDataRecord'.";
+        if (params_val == null || params_val.data == null || params_val.data == undefined || params_val.data == "") {
+            var msg = "There is no data in 'resultDataRecord'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
         }
+        if (params_val.nodeID == null || params_val.nodeID == undefined || params_val.nodeID == "") {
+            var msg = "There is no nodeID in 'resultDataRecord'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
+        var nodeID_val = String(params_val.nodeID);
 
-        var recoveryID_val = monitorID_val + Const.getUnixtimeString();
+        var recoveryID_val = nodeID_val + Const.getUnixtimeString();
         var timestamp_val = params_val.data.timestamp;
         var name_val = params_val.data.name;
         var arguments_val = params_val.data.arguments;
@@ -154,24 +175,21 @@ function addResultData( req, res ) {
             if (err) {
                 throw err;
             } else {
-                doc = { recoveryID: recoveryID_val, monitorID: monitorID_val, name: name_val, arguments: arguments_val, timestamp: timestamp_val, errorcode: errorcode_val, output: output_n_val, eoutput: output_e_val, entrytime: new Date() };
+                doc = { recoveryID: recoveryID_val, nodeID: nodeID_val, name: name_val, arguments: arguments_val, timestamp: timestamp_val, errorcode: errorcode_val, output: output_n_val, eoutput: output_e_val, entrytime: new Date() };
                 collection.insert(doc, { safe: true }, function (err, result) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
                         //console.log('Success: ' + JSON.stringify(result[0]));
-                        res.contentType('application/json');
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (addResultData)：" + e);
     }
 };
 
@@ -183,11 +201,11 @@ function getRawItemList(req, res) {
 
         key = null;
         if (params_val != null) {
-            key = { datatype: params_val };
+            key = params_val;
         };
         var order = { _id: -1 };      // -1:desc 1:asc
 
-        console.log('get raw_item list: ' + JSON.stringify(params_val));
+        //console.log('get raw_item list: ' + JSON.stringify(params_val));
         db.collection(Const.DB_TABLE_RAWITEM, function (err, collection) {
             if (err) {
                 throw err;
@@ -195,20 +213,17 @@ function getRawItemList(req, res) {
                 collection.find(key, { _id: 0 }).sort(order).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
                         //console.log(item_list);
-                        res.contentType('application/json');
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: { items: item_list }, id: id_val }));
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (getRawItemList)：" + e);
     }
 };
 
@@ -232,20 +247,17 @@ function getPresetList(req, res) {
                 collection.find(key, { _id: 0 }).sort(order).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
                         //console.log(item_list);
-                        res.contentType('application/json');
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: { items: item_list }, id: id_val }));
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (getPresetList)：" + e);
     }
 };
 
@@ -255,155 +267,240 @@ function getMonitorList(req, res) {
         var id_val = req.body.id;
         var params_val = req.body.params;
 
-        key = null;
-        if (params_val != null) {
-            key = { nodeID: params_val.nodeID };
+       if (params_val==null || params_val.nodeID==null || params_val.nodeID=="") {
+            var msg = "There is no nodeID.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
         };
 
-        console.log('get monitor list: ' + JSON.stringify(key));
+        console.log('get monitor list: ' + JSON.stringify(params_val));
         db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
             if (err) {
                 throw err;
             } else {
-                collection.find(key, { _id: 0 }).toArray(function (err, item_list) {
+                collection.find(params_val, { _id: 0 }).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else if(item_list.length==0) {
                         var msg = "There are no data of appointed nodeID. (" + params_val.nodeID +")";
                         console.log(msg);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: msg }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INVALID_PARAMS , message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
-                        //console.log(item_list);
-                        res.contentType('application/json');
+                        console.log(item_list);
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: item_list, id: id_val }));
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (getMonitorList)：" + e);
     }
 };
 
 // モニタ情報の登録
 function registMonitor(req, res) {
     try {
+        var msg = "";
         var id_val = req.body.id;
+        if (req.body.params == null || req.body.params == undefined) {
+            msg = "There is no params in 'registMonitor'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
         var nodeID_val = req.body.params.nodeID;
         var name_val = req.body.params.name;
         var watchID_val = req.body.params.watchID;
         var presetID_val = req.body.params.presetID;
         var params_val = req.body.params.params;
 
-        if (nodeID_val == null || nodeID_val == undefined) {
-            throw "There is no nodeID in 'registMonitor'.";
+        var msg = "";
+        if (nodeID_val == null || nodeID_val == undefined || nodeID_val == "") {
+            msg = "There is no nodeID in 'registMonitor'.";
         }
-        if (watchID_val == null || watchID_val == undefined) {
-            throw "There is no watchID in 'registMonitor'.";
+        else if (watchID_val == null || watchID_val == undefined || watchID_val == "") {
+            msg = "There is no watchID in 'registMonitor'.";
         }
-        if (presetID_val == null || presetID_val == undefined) {
-            throw "There is no presetID in 'registMonitor'.";
+        else if (presetID_val == null || presetID_val == undefined || presetID_val == "") {
+            msg = "There is no presetID in 'registMonitor'.";
         }
+        else if (name_val == null || name_val == undefined || name_val == "") {
+            msg = "There is no name in 'registMonitor'.";
+        }
+        else if (params_val == null || params_val == undefined || params_val == "") {
+            msg = "There is no params.params in 'registMonitor'.";
+        }
+        if( msg !== "" ) {
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
+        var nodeID_val = String(nodeID_val);        // 文字列型とする
 
         console.log('regist Monitor: ' + JSON.stringify(req.body.params));
-        db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
+        db.collection(Const.DB_TABLE_PRESET, function (err, collection_p) {
             if (err) {
                 throw err;
             } else {
-                collection.find({ nodeID: nodeID_val }).toArray(function (err, item_list) {
-                    if (item_list.length > 0) {
-                        var msg = 'Error regist monitor: nodeID already exists. ';
-                        console.log(msg);
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: "-1", message: msg }, id: id_val }))
+                // paramNameのチェック
+                collection_p.find({ presetID: presetID_val }).toArray(function (err, preset) {
+                    if (err || preset.length == 0) {
+                        msg = "There is no appointed presetID in Preset.";
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                        return;
                     } else {
-                        data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: params_val };
-                        collection.insert(data, { safe: true }, function (err, result) {
-                            if (err) {
-                                console.log('error: An error has occurred');
-                                res.contentType('application/json');
-                                res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: "-1", message: err }, id: id_val }))
+                        var pName = preset[0].paramName;
+
+                        async.each(pName, function (name, callback) {
+                            name = name.replace(/\"/g, "");
+                            console.log("preset : params_val = " + JSON.stringify(params_val));
+                            if (name in params_val) {
+                                //console.log("preset : param = " + name);
+                                callback();
                             } else {
-                                //console.log('Success: ' + JSON.stringify(result[0]));
-                                res.contentType('application/json');
-                                res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
+                                msg = "There is no necessary param in params. (" + name + ")";
+                                res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                                return;
                             }
+                        }, function (err) {
+
+                            // モニタの登録
+                            db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
+                                if (err) {
+                                    throw err;
+                                } else {
+                                    collection.find({ nodeID: nodeID_val }).toArray(function (err, item_list) {
+                                        if (item_list.length > 0) {
+                                            msg = 'Error regist monitor: nodeID already exists. ';
+                                            console.log(msg);
+                                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+                                        } else {
+                                            data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: params_val };
+                                            collection.insert(data, { safe: true }, function (err, result) {
+                                                if (err) {
+                                                    console.log('error: An error has occurred');
+                                                    res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+                                                } else {
+                                                    //console.log('Success: ' + JSON.stringify(result[0]));
+                                                    res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
                         });
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (registMonitor)：" + e);
     }
 };
 
 // モニタ情報の更新
 function updateMonitor(req, res) {
     try {
+        var msg = "";
         var id_val = req.body.id;
+        if (req.body.params == null || req.body.params == undefined) {
+            msg = "There is no params in 'updateMonitor'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
         var nodeID_val = req.body.params.nodeID;
         var name_val = req.body.params.name;
         var watchID_val = req.body.params.watchID;
         var presetID_val = req.body.params.presetID;
         var params_val = req.body.params.params;
 
-        if (nodeID_val == null || nodeID_val == undefined) {
-            throw "There is no nodeID in 'updateMonitor'.";
+        if (nodeID_val == null || nodeID_val == undefined || nodeID_val == "") {
+            msg = "There is no nodeID in 'updateMonitor'.";
         }
-        if (watchID_val == null || watchID_val == undefined) {
-            throw "There is no watchID in 'updateMonitor'.";
+        else if (watchID_val == null || watchID_val == undefined || watchID_val == "") {
+            msg = "There is no watchID in 'updateMonitor'.";
         }
-        if (presetID_val == null || presetID_val == undefined) {
-            throw "There is no presetID in 'updateMonitor'.";
+        else if (presetID_val == null || presetID_val == undefined || presetID_val == "") {
+            msg = "There is no presetID in 'updateMonitor'.";
         }
+        else if (name_val == null || name_val == undefined || name_val == "") {
+            msg = "There is no name in 'updateMonitor'.";
+        }
+        else if (params_val == null || params_val == undefined || params_val == "") {
+            msg = "There is no params.params in 'updateMonitor'.";
+        }
+        if( msg !== "" ) {
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
+        var nodeID_val = String(nodeID_val);        // 文字列型とする
 
         console.log('update Monitor: ' + JSON.stringify(req.body.params));
-        db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
+        db.collection(Const.DB_TABLE_PRESET, function (err, collection_p) {
             if (err) {
                 throw err;
             } else {
-                key = { nodeID: nodeID_val };
-                collection.findOne(key, function (err, item) {
-                    if (err) {
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
-                    } else if(item==null) {
-                        var msg = "There are no data of appointed nodeID. (" + nodeID_val +")";
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: msg }, id: id_val }))
+                // paramNameのチェック
+                collection_p.find({ presetID: presetID_val }).toArray(function (err, preset) {
+                    if (err || preset.length == 0) {
+                        msg = "There is no appointed presetID in Preset.";
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                        return;
                     } else {
-                        item.name = name_val;
-                        item.watchID = watchID_val;
-                        item.presetID = presetID_val;
-                        item.params = params_val;
-                        collection.update(key, item, { safe: true }, function (err, result) {
-                            if (err) {
-                                console.log('Error updating monitor: ' + err);
-                                res.contentType('application/json');
-                                res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        var pName = preset[0].paramName;
+                        async.each(pName, function (name, callback) {
+                            name = name.replace(/\"/g, "");
+                            console.log("preset : params_val = " + JSON.stringify(params_val));
+                            if (name in params_val) {
+                                //console.log("preset : param = " + name);
+                                callback();
                             } else {
-                                //console.log('Success: ' + JSON.stringify(result[0]));
-                                res.contentType('application/json');
-                                res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
+                                msg = "There is no necessary param in params. (" + name + ")";
+                                res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                                return;
                             }
-                        });
+                        }, function (err) {
 
+                            // モニタの登録
+                            db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
+                                if (err) {
+                                    throw err;
+                                } else {
+                                    key = { nodeID: nodeID_val };
+                                    collection.findOne(key, function (err, item) {
+                                        if (err) {
+                                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+                                        } else if (item == null) {
+                                            var msg = "There are no data of appointed nodeID. (" + nodeID_val + ")";
+                                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+                                        } else {
+                                            item.name = name_val;
+                                            item.watchID = watchID_val;
+                                            item.presetID = presetID_val;
+                                            item.params = params_val;
+                                            collection.update(key, item, { safe: true }, function (err, result) {
+                                                if (err) {
+                                                    console.log('Error updating monitor: ' + err);
+                                                    res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+                                                } else {
+                                                    //console.log('Success: ' + JSON.stringify(result[0]));
+                                                    res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                       });
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (updateMonitor)：" + e);
     }
 };
 
@@ -411,10 +508,12 @@ function updateMonitor(req, res) {
 function deleteMonitor(req, res) {
     try {
         var id_val = req.body.id;
-        var nodeID_val = req.body.params.nodeID;
-        if (nodeID_val == null || nodeID_val == undefined) {
-            throw "There is no nodeID in 'deleteMonitor'.";
+        if (req.body.params == null || req.body.params.nodeID == null || req.body.params.nodeID == undefined || req.body.params.nodeID == "") {
+            msg  = "There is no nodeID in 'deleteMonitor'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
         }
+        var nodeID_val = String(req.body.params.nodeID);
 
         console.log('delete Monitor: ' + JSON.stringify(req.body.params));
         db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
@@ -424,19 +523,16 @@ function deleteMonitor(req, res) {
                 key = { nodeID: nodeID_val };
                 collection.remove(key, { safe: true }, function (err, result) {
                     if (err) {
-                        res.contentType('application/json');
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: err }, id: id_val }))
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
                         //console.log('Success: ' + JSON.stringify(result[0]));
-                        res.contentType('application/json');
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: null, id: id_val }));
                     }
                 });
             }
         });
     } catch (e) {
-        res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:"-1" , message: String(e) }, id: id_val }))
-        console.log("失敗：" + e);
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:Const.RPC_INTERNAL_ERROR , message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
+        console.log("失敗 (deleteMonitor)：" + e);
     }
 };

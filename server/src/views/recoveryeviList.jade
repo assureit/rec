@@ -4,7 +4,7 @@ block content
         table(border=2)
             tr
                 th recoveryID
-                th monitorID
+                th nodeID
                 th timestamp
                 th arguments
                 th errorcode
@@ -17,7 +17,7 @@ block content
                 else
                 tr(class='#{className}')
                     td(align='center') #{data.recoveryID}
-                    td(align='center') #{data.monitorID}
+                    td(align='center') #{data.nodeID}
                     td #{data.timestamp}
                     td(align='center') #{data.arguments}
                     td(align='center') #{data.errorcode}

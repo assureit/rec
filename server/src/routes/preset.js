@@ -20,6 +20,7 @@ function displist(req, res) {
 
         // プリセットリスト取得API
         var key = null;
+        var queryStr = "";
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_PRESET, function (err, collection) {
             collection.find(key).count(function (err, count) {
@@ -39,7 +40,8 @@ function displist(req, res) {
                             totalList: totalList,
                             page: nowPage,
                             limit: pageLimit,
-                            item_list: item_list
+                            item_list: item_list,
+                            queryStr: queryStr
                         });
                     }
                 });
@@ -160,7 +162,7 @@ function registPreset(req, res) {
     var description_val = req.body.description;
     var datatype_val = req.body.datatype;
     var script_val = req.body.script;
-    var paramName_val = req.body.paramName;
+    var paramName_val = String(req.body.paramName).replace(/\s+/g, "").split(',');
     var normalComment_val = req.body.normalComment;
     var errorComment_val = req.body.errorComment;
     console.log('regist Preset: ' + presetID_val);
@@ -179,7 +181,7 @@ function registPreset(req, res) {
                     description: description_val,
                     datatype: datatype_val,
                     script: script_val,
-                    paramName: paramName_val,
+                    paramName: req.body.paramName,
                     normalComment: normalComment_val,
                     errorComment: errorComment_val,
                     error_msg: 'presetID は既に登録されています。'
@@ -208,7 +210,7 @@ function updatePreset(req, res) {
     var description_val = req.body.description;
     var datatype_val = req.body.datatype;
     var script_val = req.body.script;
-    var paramName_val = req.body.paramName;
+    var paramName_val = String(req.body.paramName).replace(/\s+/g, "").split(',');
     var normalComment_val = req.body.normalComment;
     var errorComment_val = req.body.errorComment;
 

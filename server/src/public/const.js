@@ -12,10 +12,22 @@ exports.DB_TABLE_EVIDENCE = 'evidence';
 exports.DB_TABLE_RECOVERY = 'recovery_evi';
 
 // WEB表示
-exports.LIST_LIMIT = 20;
+exports.LIST_LIMIT = 40;
 exports.SITE = '/api/1.0/';
+exports.SCRIPT_FOLDER='/usr/local/assureit/rec/app/script/';
 
 exports.WATCH_INTERVAL = 1;     // minutes
+
+// HTTPエラー
+exports.HTTP_STATUS_BAD_REQUEST = 400;
+exports.HTTP_STATUS_NOT_FOUND = 404;
+exports.HTTP_STATUS_SERVER_ERROR = 500;
+
+// RPCエラー
+exports.RPC_INVALID_REQUEST = -32600;
+exports.RPC_METHOD_NOT_FOUND = -32601;
+exports.RPC_INVALID_PARAMS = -32602;
+exports.RPC_INTERNAL_ERROR = -32603;
 
 // 日付文字列の取得 [YYYYMMDDHH24MISS]
 exports.getDateString = function() {

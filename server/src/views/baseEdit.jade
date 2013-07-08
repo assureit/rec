@@ -1,26 +1,26 @@
 extends layout
 
 block header
-    form(action="#{site}#{url}", method="post")
+    form(action="/rec#{site}#{url}", method="post")
         table
             tr
                 td
-                    a(href='#{site}monitorlist') モニタ一覧
+                    a(href='/rec#{site}monitorlist') モニタ一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}rawItemList') rawアイテム一覧
+                    a(href='/rec#{site}rawItemList') rawアイテム一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}presetlist') プリセット一覧
+                    a(href='/rec#{site}presetlist') プリセット一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}rawDataList') rawデータ一覧
+                    a(href='/rec#{site}rawDataList') rawデータ一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}evidencelist') エビデン一覧
+                    a(href='/rec#{site}evidencelist') エビデンス一覧
                 td &nbsp;&nbsp;
                 td
-                    a(href='#{site}recoveryevilist') リカバリスクリプトエビデンス一覧
+                    a(href='/rec#{site}recoveryevilist') リカバリスクリプトエビデンス一覧
  
         br
         span(class='title') #{title}

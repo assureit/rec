@@ -11,7 +11,7 @@
                         function(){
                                 $.ajax({
                                         type: "POST",
-                                        url: "http://localhost:57939/api/1.0/",
+                                        url: "/rec/api/1.0/",
                                         data: $("#json_com").val(),
                                         contentType: "application/json",
                                         dataType: "json",
@@ -38,7 +38,7 @@
 <body>
         <button id="myButton">result data</button>
 
-        <textarea id="json_com" cols="80" rows="10">{"jsonrpc": "2.0", "method": "resultDataRecord", "params": {"monitorID": 51022, "data": {"name": "Web Server CPU", "arguments": [], "timestamp": "2013-05-21T13:00:05+09:00", "errorcode": 0, "output_n": "Recover Script is End\n", "output_e": ""}}, "id": 1}</textarea>
+        <textarea id="json_com" cols="80" rows="10"></textarea>
         <p id="result"></p>
         <p id="status"></p>
 </body></html>

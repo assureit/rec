@@ -14,10 +14,10 @@ var express = require('express')
   , mongo = require('mongodb')
   , cron = require('cron');
 
-var app = express();
+var app = exports.app = express();
 
 app.configure(function(){
-  app.set('port', process.env.PORT || 80);
+  app.set('port', process.env.PORT || 3001);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(express.favicon());
@@ -31,7 +31,7 @@ app.configure(function(){
     //if(err.status == '400'){
         // とりあえず、こちらの書式で返す。
         res.contentType('application/json');
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:err.status , message: String(err) }, id: 0 }))
+        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code:err.status , message: String(err) }, id: 0, status:err.status }))
     //} else {
         //next(err)
     //}
@@ -46,7 +46,7 @@ app.configure('development', function(){
 app.post(Const.SITE, recPost.getJsonData);
 
 // WEB list
-app.get(Const.SITE+'rec', web.monitor.list);
+app.get(Const.SITE, web.monitor.list);
 app.get(Const.SITE+'rawDataList', web.rawData.list);
 app.get(Const.SITE+'rawItemList', web.rawItem.list);
 app.get(Const.SITE+'monitorlist', web.monitor.list);
@@ -71,9 +71,9 @@ job = new cron.CronJob({
     cronTime: cronTime
 
     , onTick: function() {
-        console.log("▼ run " + Const.getDateString());
-        wRegularly.watchRawDataByPriority();
+        //console.log("▼ run " + Const.getDateString());
         wRegularly.watchMonitor();
+        wRegularly.watchRawDataByPriority();
     }
     , start: false
     //, timeZone: "Japan/Tokyo"
@@ -89,7 +89,8 @@ db.open(function (err, db) {
     }
 });
 
-http.createServer(app).listen(app.get('port'), function(){
-  console.log("----- Express server listening on port " + app.get('port'));
-});
-
+if (!module.parent) {
+    http.createServer(app).listen(app.get('port'), function(){
+        console.log("----- Express server listening on port " + app.get('port'));
+    });
+}

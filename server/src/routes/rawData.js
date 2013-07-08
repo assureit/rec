@@ -21,10 +21,18 @@ exports.list = function (req, res) {
 
         // rawデータリスト取得API
         var key = null;
+        var queryStr = "";
+        var selWatchID = url.parse(req.url, true).query.watchID;
+        if (selWatchID != undefined) {
+            key = { watchID: selWatchID };
+            queryStr = 'watchID=' + selWatchID;
+        }
+
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
             collection.find(key).count(function (err, count) {
                 totalList = count;
+                if (nowPage * pageLimit > totalList) nowPage = parseInt(totalList / pageLimit);
                 collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred');
@@ -39,7 +47,8 @@ exports.list = function (req, res) {
                             totalList: totalList,
                             page: nowPage,
                             limit: pageLimit,
-                            item_list: item_list
+                            item_list: item_list,
+                            queryStr: queryStr
                         });
                     }
                 });

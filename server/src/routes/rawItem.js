@@ -21,6 +21,7 @@ function displist(req, res) {
 
         // rawアイテムリスト取得API
         var key = null;
+        var queryStr = "";
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_RAWITEM, function (err, collection) {
             collection.find(key).count(function (err, count) {
@@ -40,7 +41,8 @@ function displist(req, res) {
                             totalList: totalList,
                             page: nowPage,
                             limit: pageLimit,
-                            item_list: item_list
+                            item_list: item_list,
+                            queryStr: queryStr
                         });
                     }
                 });
