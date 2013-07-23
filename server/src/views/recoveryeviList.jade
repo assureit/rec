@@ -1,6 +1,18 @@
 extends base
 
 block content
+        table
+            tr
+                td  nodeID：
+                td 
+                    select(name="nodeID",id="nodeID")
+                        option(value="") ALL
+                        each key in node_list
+                            option(value="#{key}",selected=key==nodeID) #{key}
+                td &nbsp;&nbsp;
+                td 
+                    input(type='button', onclick='recoveryeviSort();', value='検索')
+
         table(border=2)
             tr
                 th recoveryID
@@ -19,7 +31,7 @@ block content
                     td(align='center') #{data.recoveryID}
                     td(align='center') #{data.nodeID}
                     td #{data.timestamp}
-                    td(align='center') #{data.arguments}
+                    td #{data.arguments}
                     td(align='center') #{data.errorcode}
                     td(align='center') #{data.output}
                     td(align='center') #{data.eoutput}

@@ -14,9 +14,11 @@ exports.DB_TABLE_RECOVERY = 'recovery_evi';
 // WEB表示
 exports.LIST_LIMIT = 40;
 exports.SITE = '/api/1.0/';
-exports.SCRIPT_FOLDER='/usr/local/assureit/rec/app/script/';
+exports.SCRIPT_FOLDER = './script/';
+//exports.SCRIPT_FOLDER='/usr/local/assureit/rec/app/script/';
 
 exports.WATCH_INTERVAL = 1;     // minutes
+
 
 // HTTPエラー
 exports.HTTP_STATUS_BAD_REQUEST = 400;
@@ -70,4 +72,30 @@ exports.getIsoDateString = function() {
 
     var dateStr = date.getFullYear() + '-' + m + '-' + d + 'T' + h + ':' + mi + ':' + s + 'Z';
     return dateStr;
+};
+
+// nullの確認
+exports.isNull = function (in_object) {
+    if (in_object == null || in_object == undefined || in_object == "") {
+        return true;
+    }
+    return false;
+};
+
+// JSON形式の確認
+exports.isJson = function (in_object) {
+    if (in_object == null || in_object == undefined || in_object == "") {
+        return false ;
+    }
+    in_object = (typeof (in_object) == "function") ? in_object() : in_object;
+    if (typeof (in_object) != "string") {
+        return false;
+    }
+
+    try {
+        in_object = (!JSON) ? eval("(" + in_object + ")") : JSON.parse(in_object); return true;
+    } catch (e) {
+        return false;
+    }
+    return false;
 };

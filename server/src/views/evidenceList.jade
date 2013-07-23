@@ -1,6 +1,18 @@
 extends base
 
 block content
+        table
+            tr
+                td  nodeID：
+                td 
+                    select(name="nodeID",id="nodeID")
+                        option(value="") ALL
+                        each key in node_list
+                            option(value="#{key}",selected=key==nodeID) #{key}
+                td &nbsp;&nbsp;
+                td 
+                    input(type='button', onclick='evidenceSort();', value='検索')
+
         table(border=2)
             tr
                 th evidenceID

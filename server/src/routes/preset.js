@@ -2,6 +2,7 @@ var http = require('http');
 var url = require('url');
 var mongo = require('mongodb');
 var Const = require('../public/const');
+var fs = require('fs');
 
 // プリセットリスト表示
 function displist(req, res) {
@@ -25,6 +26,10 @@ function displist(req, res) {
         db.collection(Const.DB_TABLE_PRESET, function (err, collection) {
             collection.find(key).count(function (err, count) {
                 totalList = count;
+                if (nowPage < 0 || (nowPage * pageLimit > totalList)) {
+                    nowPage = parseInt((totalList - 1) / pageLimit);
+                }
+
                 collection.find(key).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred');
@@ -108,7 +113,8 @@ exports.edit = function (req, res) {
                 paramName: '',
                 normalComment: '',
                 errorComment: '',
-                error_msg: ''
+                error_msg: '',
+                updateFg: false
             });
         } else if (edit_action == "updateEdit") {
             // ------------------ 変更編集 -----------------
@@ -134,7 +140,8 @@ exports.edit = function (req, res) {
                             paramName: item.paramName,
                             normalComment: item.normalComment,
                             errorComment: item.errorComment,
-                            error_msg: ''
+                            error_msg: '',
+                            updateFg: true
                         });
                     }
                 });
@@ -184,7 +191,8 @@ function registPreset(req, res) {
                     paramName: req.body.paramName,
                     normalComment: normalComment_val,
                     errorComment: errorComment_val,
-                    error_msg: 'presetID は既に登録されています。'
+                    error_msg: 'presetID は既に登録されています。',
+                    updateFg: false
                 });
             } else {
 
@@ -195,6 +203,22 @@ function registPreset(req, res) {
                         console.log('Error regist preset: ' + err);
                     } else {
                         console.log('Success: ' + JSON.stringify(result[0]));
+
+                        // ファイルアップロード
+                        if (req.files.upScriptfile) {
+                            //var target_path = './script/' + req.files.upScriptfile.name;
+                            var target_path = Const.SCRIPT_FOLDER + presetID_val +'.js';
+                            var tmp_path = req.files.upScriptfile.path;
+                            fs.rename(tmp_path, target_path, function (err) {
+                                if (!err) {
+                                    fs.unlink(tmp_path, function () {
+                                        if (err) {
+                                            throw err;
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
                     displist(req, res);
                 });
@@ -223,6 +247,22 @@ function updatePreset(req, res) {
                 console.log('Error update preset: ' + err);
             } else {
                 console.log('Success: ' + JSON.stringify(result[0]));
+
+                // ファイルアップロード
+                if (req.files.upScriptfile) {
+                    //var target_path = './script/' + req.files.upScriptfile.name;
+                    var target_path = Const.SCRIPT_FOLDER + presetID_val +'.js';
+                    var tmp_path = req.files.upScriptfile.path;
+                    fs.rename(tmp_path, target_path, function (err) {
+                        if (!err) {
+                            fs.unlink(tmp_path, function () {
+                                if (err) {
+                                    throw err;
+                                }
+                            });
+                        }
+                    });
+                }
             }
             displist(req, res);
         });

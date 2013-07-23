@@ -26,6 +26,10 @@ function displist(req, res) {
         db.collection(Const.DB_TABLE_RAWITEM, function (err, collection) {
             collection.find(key).count(function (err, count) {
                 totalList = count;
+                if (nowPage < 0 || (nowPage * pageLimit > totalList)) {
+                    nowPage = parseInt((totalList - 1) / pageLimit);
+                }
+
                 collection.find(key).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred');
@@ -105,7 +109,8 @@ exports.edit = function (req, res) {
                 watchID: '',
                 name: '',
                 datatype: '',
-                error_msg: ''
+                error_msg: '',
+                updateFg: false
             });
         } else if (edit_action == "updateEdit") {
             // ------------------ 変更編集 -----------------
@@ -127,7 +132,8 @@ exports.edit = function (req, res) {
                             watchID: item.watchID,
                             name: item.name,
                             datatype: item.datatype,
-                            error_msg: ''
+                            error_msg: '',
+                            updateFg: true
                         });
                     }
                 });
@@ -157,15 +163,33 @@ function registRawItem(req, res) {
     console.log('regist RawItem: ' + watchID_val);
 
     db.collection(Const.DB_TABLE_RAWITEM, function (err, collection) {
-        var data = { watchID: watchID_val, name: name_val, datatype: datatype_val };
-        console.log('regist RawItem: ' + JSON.stringify(data));
-        collection.insert(data, { safe: true }, function (err, result) {
-            if (err) {
-                console.log('Error regist rawItem: ' + err);
+        collection.find({ watchID: watchID_val }).toArray(function (err, item_list) {
+            if (err || item_list.length > 0) {
+                res.render('rawItemEdit', {
+                    title: 'rawアイテムの追加',
+                    site: Const.SITE,
+                    url: 'rawItemList',
+                    url2: 'rawItemEdit',
+                    editType: 'regist',
+                    selid: '',
+                    watchID: watchID_val,
+                    name: name_val,
+                    datatype: datatype_val,
+                    error_msg: 'watchID は既に登録されています。',
+                    updateFg: false
+                });
             } else {
-                console.log('Success: ' + JSON.stringify(result[0]));
+                var data = { watchID: watchID_val, name: name_val, datatype: datatype_val };
+                console.log('regist RawItem: ' + JSON.stringify(data));
+                collection.insert(data, { safe: true }, function (err, result) {
+                    if (err) {
+                        console.log('Error regist rawItem: ' + err);
+                    } else {
+                        console.log('Success: ' + JSON.stringify(result[0]));
+                    }
+                    displist(req, res);
+                });
             }
-            displist(req, res);
         });
     });
 };

@@ -128,6 +128,42 @@ describe('api', function () {
                 assert.equal(-32602, res.body.error.code);
             });
         });
+        it('should return HTTP500 and -32602 when param is undefined.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "registMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "100", "name": "name_str", "watchID": "watch_1", "presetID": "param_test", "params": {"a": 1000, "b":800, "c": undefined}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
+            });
+        });
+        it('should return HTTP500 and -32602 when be not enough params.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "registMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "100", "name": "name_str", "watchID": "watch_1", "presetID": "param_test", "params": {"a": 1000, "b":800}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
+            });
+        });
 
         it('should return HTTP200 and response object when it succeeded', function (done) {
             request(app['app']).post('/api/1.0/').send({
@@ -162,6 +198,24 @@ describe('api', function () {
                 assert.notStrictEqual(undefined, res.body.result);
                 assert.deepEqual([{"nodeID":"100","name":"name_str","watchID":"watch_1","presetID":"param_test","params":{"a":1000,"b":800,"c": 50}}], res.body.result);
                 done();
+            });
+        });
+        it('should return HTTP500 and -32602 when there is same nodeID.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "registMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "100", "name": "name_str", "watchID": "watch_1", "presetID": "param_test", "params": {"a":100, "b":200, "c":300}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
             });
         });
     });

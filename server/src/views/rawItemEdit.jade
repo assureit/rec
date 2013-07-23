@@ -1,12 +1,17 @@
 extends baseEdit
 
 block content
-    form(action="/rec#{site}#{url2}", method="post")
+    form(action="#{url2}", method="post")
           table
             tr
                 td watchID
+                -if(!updateFg) {
                 td 
                     input(type='text', value='#{watchID}', name='watchID', size='80')
+                -} else {
+                td 
+                    input(type='text', value='#{watchID}', name='watchID', size='80', readonly='readonly')
+                -}
             tr
                 td name
                 td 

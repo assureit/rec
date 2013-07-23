@@ -1,11 +1,11 @@
 extends baseEdit
 
 block content
-    form(action="/rec#{site}#{url2}", method="post")
+    form(action="#{url2}", method="post")
           table
             tr
                 td nodeID
-                -if(nodeID == '') {
+                -if(!updateFg) {
                 td 
                     input(type='text', value='#{nodeID}', name='nodeID', size='80')
                 -} else {

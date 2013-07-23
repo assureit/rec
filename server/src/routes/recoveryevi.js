@@ -22,31 +22,38 @@ exports.list = function (req, res) {
         var key = null;
         var queryStr = "";
         var selNodeID = url.parse(req.url, true).query.nodeID;
-        if (selNodeID != undefined) {
+        if (selNodeID!=undefined && selNodeID!=null && selNodeID!='') {
             key = { nodeID: selNodeID };
             queryStr = 'nodeID=' + selNodeID;
-            console.log('nodeID: ' + JSON.stringify(key));
         }
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_RECOVERY, function (err, collection) {
             collection.find(key).count(function (err, count) {
                 totalList = count;
+                if (nowPage < 0 || (nowPage * pageLimit > totalList)) {
+                    nowPage = parseInt((totalList - 1) / pageLimit);
+                }
+
                 collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred');
                         throw err;
                     } else {
-                        //console.log(JSON.stringify(item_list));
-                        var count = item_list.length;
-                        res.render('recoveryeviList', {
-                            title: 'リカバリスクリプトエビデンス一覧',
-                            site: Const.SITE,
-                            url: 'recoveryeviList',
-                            totalList: totalList,
-                            page: nowPage,
-                            limit: pageLimit,
-                            item_list: item_list,
-                            queryStr: queryStr
+                        collection.distinct('nodeID', function (err, node_list) {
+                            //console.log(JSON.stringify(item_list));
+                            var count = item_list.length;
+                            res.render('recoveryeviList', {
+                                title: '対応スクリプトエビデンス一覧',
+                                site: Const.SITE,
+                                url: 'recoveryeviList',
+                                totalList: totalList,
+                                page: nowPage,
+                                limit: pageLimit,
+                                item_list: item_list,
+                                node_list: node_list,
+                                nodeID: selNodeID,
+                                queryStr: queryStr
+                            });
                         });
                     }
                 });
@@ -63,9 +70,15 @@ exports.download = function (req, res) {
     try {
         console.log("---- download recoveryeviList ----");
 
+        var key = null;
+        var selNodeID = url.parse(req.url, true).query.nodeID;
+        if (selNodeID!=undefined && selNodeID!=null && selNodeID!='') {
+            key = { nodeID: selNodeID };
+        }
+                    console.log('key: '+JSON.stringify(key));
         var order = { _id: -1 };      // -1:desc 1:asc
         db.collection(Const.DB_TABLE_RECOVERY, function (err, collection) {
-            collection.find(null, { _id: 0, entrytime: 0 }).sort(order).toArray(function (err, item_list) {
+            collection.find(key, { _id: 0, entrytime: 0 }).sort(order).toArray(function (err, item_list) {
                 if (err) {
                     console.log('error: An error has occurred');
                     throw err;

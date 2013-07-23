@@ -50,3 +50,21 @@ function retList(url)
 {
     location.href =  url ;
 }
+
+function rawDataSort()
+{
+	var watchID = document.getElementById("watchID").value;
+    location.href = "rawDataList?watchID=" + watchID;
+}
+
+function evidenceSort()
+{
+	var nodeID = document.getElementById("nodeID").value;
+    location.href = "evidenceList?nodeID=" + nodeID;
+}
+
+function recoveryeviSort()
+{
+	var nodeID = document.getElementById("nodeID").value;
+    location.href = "recoveryeviList?nodeID=" + nodeID;
+}

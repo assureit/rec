@@ -1,6 +1,18 @@
 extends base
 
 block content
+        table
+            tr
+                td  watchID：
+                td 
+                    select(name="watchID",id="watchID")
+                        option(value="") ALL
+                        each key in watch_list
+                            option(value="#{key}",selected=key==watchID) #{key}
+                td &nbsp;&nbsp;
+                td 
+                    input(type='button', onclick='rawDataSort();', value='検索')
+
         table(border=2)
             tr
                 th rawID

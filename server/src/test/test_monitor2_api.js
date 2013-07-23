@@ -110,13 +110,86 @@ describe('api', function () {
                 assert.equal(-32602, res.body.error.code);
             });
         });
+		// set preset table "presetID": "param_test", "paramName":"a","b","c"
+        it('should return HTTP500 and -32602 when paramName is different.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "updateMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "100", "name": "name_str", "watchID": "watch_2", "presetID": "param_test", "params": {"a": 100, "b":200, "d":300}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
+            });
+        });
+        it('should return HTTP500 and -32602 when param is undefined.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "updateMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "100", "name": "name_str", "watchID": "watch_1", "presetID": "param_test", "params": {"a": 100, "b":200, "c": undefined}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
+            });
+        });
+        it('should return HTTP500 and -32602 when be not enough params.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "updateMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "100", "name": "name_str", "watchID": "watch_1", "presetID": "param_test", "params": {"a": 100, "b":200}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
+            });
+        });
+        it('should return HTTP500 and -32602 when there is not same nodeID.', function () {
+            request(app['app']).post('/api/1.0/').send({
+                "jsonrpc": "2.0",
+                "method": "updateMonitor",
+                "id": 100,
+                "params": {
+                    "nodeID": "199", "name": "name_str1", "watchID": "watch_2", "presetID": "param_test", "params": {"a":100,"b":200,"c":300}
+                }
+            }).expect(500).end(function (err, res) {
+                if(err) {
+                    throw err;
+                }
+                assert.equal(100, res.body.id);
+                assert.notStrictEqual(undefined, res.body.error);
+                assert.notStrictEqual(undefined, res.body.error.code);
+                assert.equal(-32602, res.body.error.code);
+            });
+        });
         it('should return HTTP200 and response object when it succeeded', function (done) {
             request(app['app']).post('/api/1.0/').send({
                 jsonrpc: "2.0",
                 method: "updateMonitor",
                 id: 100,
                 "params": {
-                    "nodeID": "100", "name": "name_str1", "watchID": "watch_2", "presetID": "param_test", "params": {"a":100,"b":200,"c":300}
+                    "nodeID": "100", "name": "name_str1", "watchID": "watch_2", "presetID": "param_test", "params": {"a": 100, "b":200, "c": 300}
                 }
             }).expect(200).end(function (err, res) {
                 if(err) {

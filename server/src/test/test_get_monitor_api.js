@@ -23,7 +23,7 @@ describe('api', function () {
                 "jsonrpc": "2.0",
                 "method": "getMonitor",
                 "id": 100,
-                "params": {"watchID":"55"}
+                "params": {"nodeID":"555555"}
             }).expect(500).end(function (err, res) {
                 if(err) {
                     throw err;
@@ -39,7 +39,7 @@ describe('api', function () {
                 "jsonrpc": "2.0",
                 "method": "getMonitor",
                 "id": 100,
-                "params": {"watchID":"5555"}
+                "params": {"nodeID":"5555"}
             }).expect(500).end(function (err, res) {
                 if(err) {
                     throw err;
@@ -50,7 +50,7 @@ describe('api', function () {
                 assert.equal(-32602, res.body.error.code);
             });
         });
-        it('should return HTTP200 and response object when it succeeded', function (done) {
+        it('should return HTTP200 and response object when it succeeded (insert table nodeID=51)', function (done) {
             request(app['app']).post('/api/1.0/').send({
                 "jsonrpc": "2.0",
                 "method": "getMonitor",

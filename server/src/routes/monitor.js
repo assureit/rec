@@ -25,6 +25,10 @@ function displist(req, res) {
         db.collection(Const.DB_TABLE_MONITOR, function (err, collection) {
             collection.find(key).count(function (err, count) {
                 totalList = count;
+                if (nowPage < 0 || (nowPage * pageLimit > totalList)) {
+                    nowPage = parseInt((totalList - 1) / pageLimit);
+                }
+
                 collection.find(key).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred');
@@ -106,7 +110,8 @@ exports.edit = function (req, res) {
                 presetID: '',
                 name: '',
                 params: '',
-                error_msg: ''
+                error_msg: '',
+                updateFg: false
             });
         } else if (edit_action == "updateEdit") {
             // ------------------ 変更編集 -----------------
@@ -130,7 +135,8 @@ exports.edit = function (req, res) {
                             presetID: item.presetID,
                             name: item.name,
                             params: JSON.stringify(item.params),
-                            error_msg: ''
+                            error_msg: '',
+                            updateFg: true
                         });
                     }
                 });
@@ -175,7 +181,24 @@ function registMonitor(req, res) {
                         presetID: presetID_val,
                         name: name_val,
                         params: params_val,
-                        error_msg: 'nodeID は既に登録されています。 '
+                        error_msg: 'nodeID は既に登録されています。 ',
+                        updateFg: false
+                    });
+                } else if ( Const.isJson(params_val)==false ) {
+                    res.render('monitorEdit', {
+                        title: 'モニタの追加',
+                        site: Const.SITE,
+                        url: 'monitorList',
+                        url2: 'monitorEdit',
+                        editType: 'regist',
+                        selid: '',
+                        nodeID: nodeID_val,
+                        watchID: watchID_val,
+                        presetID: presetID_val,
+                        name: name_val,
+                        params: params_val,
+                        error_msg: 'params の書式が異なります。',
+                        updateFg: false
                     });
                 } else {
                     var data = { nodeID: nodeID_val, name: name_val, watchID: watchID_val, presetID: presetID_val, params: JSON.parse(params_val) };

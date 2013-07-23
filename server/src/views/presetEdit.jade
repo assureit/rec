@@ -1,11 +1,11 @@
 extends baseEdit
 
 block content
-    form(action="/rec#{site}#{url2}", method="post")
+    form(action="#{url2}", enctype="multipart/form-data", method="post")
           table
             tr
                 td presetID
-                -if(presetID == '') {
+                -if(!updateFg) {
                 td 
                     input(type='text', value='#{presetID}', name='presetID', size='80')
                 -} else {
@@ -21,10 +21,6 @@ block content
                 td 
                     input(type='text', value='#{datatype}', name='datatype', size='80')
             tr
-                td script
-                td 
-                    input(type='text', value='#{script}', name='script', size='80')
-            tr
                 td paramName
                 td 
                     input(type='text', value='#{paramName}', name='paramName', size='80')
@@ -36,6 +32,10 @@ block content
                 td errorComment
                 td 
                     input(type='text', value='#{errorComment}', name='errorComment', size='80')
+            tr
+                td script file
+                td 
+                    input(type='file', name='upScriptfile')
           table
             tr
                 td 
