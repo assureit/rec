@@ -205,7 +205,7 @@ function registPreset(req, res) {
                         console.log('Success: ' + JSON.stringify(result[0]));
 
                         // ファイルアップロード
-                        if (req.files.upScriptfile) {
+                        if (req.files.upScriptfile.name) {
                             //var target_path = './script/' + req.files.upScriptfile.name;
                             var target_path = Const.SCRIPT_FOLDER + presetID_val +'.js';
                             var tmp_path = req.files.upScriptfile.path;
@@ -249,7 +249,7 @@ function updatePreset(req, res) {
                 console.log('Success: ' + JSON.stringify(result[0]));
 
                 // ファイルアップロード
-                if (req.files.upScriptfile) {
+                if (req.files.upScriptfile.name) {
                     //var target_path = './script/' + req.files.upScriptfile.name;
                     var target_path = Const.SCRIPT_FOLDER + presetID_val +'.js';
                     var tmp_path = req.files.upScriptfile.path;

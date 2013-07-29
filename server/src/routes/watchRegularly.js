@@ -1,5 +1,6 @@
 var Const = require('../public/const');
 var fs = require('fs');
+var request = require('superagent');
 
 // rawデータの監視
 exports.watchRawDataByPriority = function () {
@@ -23,10 +24,14 @@ exports.watchRawDataByPriority = function () {
     });
 };
 
-// エビデンスの追加
+// エビデンスの追加(外部スクリプトのコールバック関数)
 function wrCallback(err, nodeId, ret_status) {
-    if (ret_status == true) ret_status = 1;
-    else if (ret_status == false) ret_status = 0;
+    var ret_ads = "";
+    if (ret_status == true) {
+        ret_status = 1;
+    } else if (ret_status == false) {
+        ret_status = 0;
+    }
     //console.log('wrCallback ret_status: ' + ret_status);
 
     if (ret_status != null) {
@@ -38,7 +43,7 @@ function wrCallback(err, nodeId, ret_status) {
                 //console.log(JSON.stringify(evid_list));
                 if (!err) {
                     if ((evid_list.length > 0 && ret_status != evid_list[0].status)     // エビデンスと実行結果を比較
-                        || (evid_list.length == 0 && nodeId != null)) {               // レコードがない場合
+                        || (evid_list.length == 0 && nodeId != null)) {                 // レコードがない場合
                         // エビデンスを追加
                         var evidenceID_val = nodeId + Const.getUnixtimeString();
                         var timestamp_val = Const.getIsoDateString();
@@ -47,9 +52,12 @@ function wrCallback(err, nodeId, ret_status) {
                             if (err) {
                                 console.log('error: An error has occurred [watchMonitor : collection2.insert evidence ]');
                             } else {
-                                console.log(" add EVIDENCE status change=" + nodeId);
+                                console.log(' add EVIDENCE status change=' + nodeId);
                             }
                         });
+                        //--------------------------------------------------------------------
+                        // adsのAPI呼び出し
+                        adsApiCallback(err,nodeId,evidenceID_val,ret_status);
                     }
                 }
             });
@@ -57,6 +65,66 @@ function wrCallback(err, nodeId, ret_status) {
     };
 }
 
+// adsのAPI呼び出し
+function adsApiCallback(err, nodeId_val, evidenceId_val, ret_status) {
+    db.collection(Const.DB_TABLE_MONITOR, function (err, collection1) {
+        collection1.findOne({ nodeID: nodeId_val }, function (err, monitor) {
+            if (!err) {
+                var watchID_val = monitor.watchID;
+                var presetID_val = monitor.presetID;
+                var timestamp_val = Const.getIsoDateString();
+                db.collection(Const.DB_TABLE_RAWITEM, function (err, collection2) {
+                    collection2.findOne({ watchID: watchID_val }, function (err, rawItem) {
+                        if (!err) {
+                            db.collection(Const.DB_TABLE_PRESET, function (err, collection3) {
+                                collection3.findOne({ presetID: presetID_val }, function (err, preset) {
+                                    if (!err) {
+                                        var ret_ads = "";
+                                        if (ret_status == 1) {
+                                            ret_ads = "NG";
+                                            //comment = preset.errorComment.replace('$$1',rawItem.name);
+                                            comment = preset.errorComment;
+                                            comment = comment.replace("$$0", rawItem.name);
+                                            var params = preset.paramName;
+                                            comment = comment.replace("$$1", params[0].replace(/\"/g, ""));
+                                            comment = comment.replace("$$2", params[1].replace(/\"/g, ""));
+                                            comment = comment.replace("$$3", params[2].replace(/\"/g, ""));
+                                        } else if (ret_status == 0) {
+                                            ret_ads = "OK";
+                                            comment = preset.normalComment;
+                                            comment = comment.replace("$$0", rawItem.name);
+                                        }
+
+                                        request.post(Const.ADS_URL)
+                                            .send({
+                                                "jsonrpc": "2.0",
+                                                "method": "modifyMonitorStatus",
+                                                "id": "100",
+                                                 "params": {
+                                                    "evidenceId":evidenceId_val,
+                                                    "systemNodeId":nodeId_val,
+                                                    "timestamp":timestamp_val,
+                                                    "comment":comment,
+                                                    "status":ret_ads
+                                                }
+                                            })
+                                            .end(function (res) {
+                                                if (res.ok) {
+                                                    console.log(res.body.name);
+                                                } else {
+                                                    console.log('ADSエラー');
+                                                }
+                                            });
+                                    }
+                                });
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    });
+}
 
 // モニタの監視
 exports.watchMonitor = function () {
@@ -85,8 +153,8 @@ exports.watchMonitor = function () {
                         });
                         -------------------------------------------------------*/
 
-                        // スクリプトの読み込みと実行
-                        var filename = Const.SCRIPT_FOLDER + item.presetID + '.js';
+                        // 外部スクリプトの読み込みと実行
+                        var filename = Const.SCRIPT_FOLDER + item.presetID + '.js';     // 
                         fs.readFile(filename, 'utf8', function (err, data) {
                             if (err) {
                                 console.log('error: file read error' + err);

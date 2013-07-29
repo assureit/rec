@@ -14,8 +14,9 @@ exports.DB_TABLE_RECOVERY = 'recovery_evi';
 // WEB表示
 exports.LIST_LIMIT = 40;
 exports.SITE = '/api/1.0/';
-exports.SCRIPT_FOLDER = './script/';
-//exports.SCRIPT_FOLDER='/usr/local/assureit/rec/app/script/';
+//exports.SCRIPT_FOLDER = './script/';
+exports.SCRIPT_FOLDER='/usr/local/assureit/rec/app/script/';
+exports.ADS_URL = 'http://54.250.133.227/ads/api/1.0/private/';
 
 exports.WATCH_INTERVAL = 1;     // minutes
 
