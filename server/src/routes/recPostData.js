@@ -11,6 +11,7 @@ exports.getJsonData = function (req, res) {
         //console.log("■ method=" + method_val);
 
         res.contentType('application/json');
+        res.header('Access-Control-Allow-Origin', '*');
         if (req.body.jsonrpc !== '2.0') {
             var msg = 'JSON RPC version is invalid or missiong';
             res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_REQUEST, message: msg }, id: id_val }), Const.HTTP_STATUS_BAD_REQUEST)
