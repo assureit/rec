@@ -1,0 +1,28 @@
+body {
+  padding: 30px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+span.title {
+    color: #000000;
+    font-size: large;
+    font-weight: bold;
+}
+
+tr.list_even {
+    background-color: #ebf9f7
+}
+
+tr.list_odd {
+    background-color: #ffffff
+}
+
+div.error_text {
+    color: #f00;
+    font-size: medium;
+    font-weight: bold;
+}
