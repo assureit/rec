@@ -33,23 +33,39 @@ exports.pushRawData = function (req, res) {
             return;
         }
         var data_val = Number(params_val.data);
-        if (Const.isNull(data_val) || isNaN(data_val) ) {
+        //console.log('data_val: ' + data_val);
+        if (isNaN(data_val) ) {
             var msg = "There is no data in 'pushRawData'.";
             res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
             return;
         }
-        var timestamp_val = params_val.timestamp;
-        if (Const.isNull(timestamp_val)) {
-           timestamp_val = Const.getIsoDateString();
+        var authid_val = params_val.authid;
+        //console.log('authid_val: ' + data_val);
+        if (Const.isNull(authid_val)) {
+            var msg = "There is no authid in 'pushRawData'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
+        }
+        var timestamp_val = new Date();
+        var timestamp_str = params_val.timestamp;
+        if (!Const.isNull(timestamp_str)) {
+            try {
+                timestamp_val = new Date(timestamp_str);
+            } catch (e) {
+                var msg = "timestamp string is abnormal. in 'pushRawData'.";
+                res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                return;
+            }
         }
         var context_val = params_val.context;
+        var recID_val = Const.getUnixtimeString();
 
         //console.log('Adding rawData: ' + JSON.stringify(params_val));
         db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
             if (err) {
                 throw err;
             } else {
-                doc = { location: location_val, type: type_val, data: data_val, timestamp: timestamp_val, context: context_val, entrytime: new Date() };
+                doc = { recid: recID_val, location: location_val, type: type_val, authid: authid_val, data: data_val, timestamp: timestamp_val, context: context_val };
                 collection.insert(doc, { safe: true }, function (err, result) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
@@ -75,32 +91,28 @@ exports.getRawData = function (req, res) {
 
         var id_val = req.body.id;
         var params_val = req.body.params;
-        var key = getRawDataSortKey(params_val);
-        var p_limit = params_val.limit;
-        var p_datatype = params_val.datatype;
-        if (Const.isNull(p_datatype)) {
-            p_datatype = "ave"
+        // params check
+        var recid_val = params_val.recid;
+        if (Const.isNull(recid_val)) {
+            var msg = "There is no recid in 'getRawData'.";
+            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+            return;
         }
-
-        //console.log("key=" + JSON.stringify(key));
-        var order = { _id: -1 };      // -1:desc 1:asc
+        var key = { recid: recid_val };
 
         db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
             if (err) {
                 throw err;
             } else {
-                collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(p_limit).toArray(function (err, item_list) {
+                collection.findOne(key, { _id: 0 }, function (err, item) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
                         res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
+                    } else if (item == null) {
+                        var msg = "There are no data of appointed recid. (" + recid_val + ")";
+                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR)
                     } else {
-                        var data_val = getCalculateData(item_list, p_datatype);
-                        if (data_val == null) {
-                            msg = "error: An error has occurred : datatype=" + p_datatype;
-                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_METHOD_NOT_FOUND, message: msg }, id: id_val }), Const.HTTP_STATUS_NOT_FOUND);
-                            return;
-                        }
-                        res.send(JSON.stringify({ jsonrpc: "2.0", result: { data: data_val }, id: id_val }));
+                        res.send(JSON.stringify({ jsonrpc: "2.0", result: item, id: id_val }));
                     }
                 });
             }
@@ -112,82 +124,39 @@ exports.getRawData = function (req, res) {
     }
 };
 
-// 指定rawデータの確認API
-exports.checkRawData = function (req, res) {
+// 最新rawデータの取得API
+exports.getLatestData = function (req, res) {
     try {
 
         var id_val = req.body.id;
         var params_val = req.body.params;
-        var key = getRawDataSortKey(params_val);
-        var p_limit = params_val.limit;
-        var p_datatype = params_val.datatype;
-        if (Const.isNull(p_datatype)) {
-            p_datatype = "ave"
-        }
-        var check_val = params_val.check;
-        if (Const.isNull(check_val)) {
-            var msg = "There is no check in 'checkRawData'.";
+        // params check
+        var location_val = params_val.location;
+        if (Const.isNull(location_val)) {
+            var msg = "There is no location in 'getLatestData'.";
             res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
             return;
         }
-        // check項目の分割
-        var check_arr = check_val.replace(/[\t\r\n\s]+/g, " ").replace(/(^\s+|\s+$)/g, "").split(" ");
-        if (check_arr.length != 2) {
-            var msg = "A value of check is abnormal. 'checkRawData'. [" + check_val + "]";
+        var type_val = params_val.type;
+        if (Const.isNull(type_val)) {
+            var msg = "There is no type in 'getLatestData'.";
             res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INVALID_PARAMS, message: msg }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
             return;
         }
-        var order = { _id: -1 };      // -1:desc 1:asc
+        var key = { location: location_val, type: type_val };
+        //console.log("key=" + JSON.stringify(key));
+        var order = { timestamp: -1 };      // -1:desc 1:asc
 
         db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
             if (err) {
                 throw err;
             } else {
-                collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(p_limit).toArray(function (err, item_list) {
+                collection.find(key, { _id:0 }).sort(order).limit(1).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
                         res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
                     } else {
-                        var data_val = getCalculateData(item_list, p_datatype);
-                        if (data_val == null) {
-                            msg = "error: An error has occurred : datatype=" + p_datatype;
-                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_METHOD_NOT_FOUND, message: msg }, id: id_val }), Const.HTTP_STATUS_NOT_FOUND);
-                            return;
-                        }
-
-                        console.log("data_val：" + data_val);
-                        var ret_val = false;
-                        if (check_arr[0] == "gt") {            // より大きい ＞
-                            if (data_val > Number(check_arr[1])) {
-                                ret_val = true;
-                            }
-                        } else if (check_arr[0] == "lt") {     // より小さい ＜
-                            if (data_val < Number(check_arr[1])) {
-                                ret_val = true;
-                            }
-                        } else if (check_arr[0] == "gte") {    // 以上 ≧
-                            if (data_val >= Number(check_arr[1])) {
-                                ret_val = true;
-                            }
-                        } else if (check_arr[0] == "lte") {    // 以下 ≦
-                            if (data_val <= Number(check_arr[1])) {
-                                ret_val = true;
-                            }
-                        } else if (check_arr[0] == "eq") {     // 等しい ＝
-                            if (data_val == Number(check_arr[1])) {
-                                ret_val = true;
-                            }
-                        } else if (check_arr[0] == "neq") {    // 等しくない ≠
-                            if (data_val != Number(check_arr[1])) {
-                                ret_val = true;
-                            }
-                        } else {
-                            msg = "error: An error has occurred : check=" + check_val;
-                            res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_METHOD_NOT_FOUND, message: msg }, id: id_val }), Const.HTTP_STATUS_NOT_FOUND);
-                            return;
-                        }
-
-                        res.send(JSON.stringify({ jsonrpc: "2.0", result: { "return": ret_val }, id: id_val }));
+                        res.send(JSON.stringify({ jsonrpc: "2.0", result: item_list[0], id: id_val }));
                     }
                 });
             }
@@ -195,7 +164,7 @@ exports.checkRawData = function (req, res) {
 
     } catch (e) {
         res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
-        console.log("失敗 (checkRawData)：" + e);
+        console.log("失敗 (getLatestData)：" + e);
     }
 };
 
@@ -207,15 +176,16 @@ exports.getRawDataList = function (req, res) {
         var params_val = req.body.params;
         var key = getRawDataSortKey(params_val);
         var p_limit = params_val.limit;
+        var sort_val = params_val.sort;
 
         //console.log("key=" + JSON.stringify(key));
-        var order = { _id: -1 };      // -1:desc 1:asc
+        var order = { timestamp: -1 };      // -1:desc 1:asc
 
         db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
             if (err) {
                 throw err;
             } else {
-                collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(p_limit).toArray(function (err, item_list) {
+                collection.find(key, { _id: 0 }).sort(order).limit(p_limit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
                         res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
@@ -234,8 +204,9 @@ exports.getRawDataList = function (req, res) {
 
 };
 
-// locationデータ一覧の取得API
-exports.getLocation = function (req, res) {
+
+// Monitor情報一覧の取得API
+exports.getMonitorList = function (req, res) {
     try {
         var id_val = req.body.id;
 
@@ -243,13 +214,11 @@ exports.getLocation = function (req, res) {
             if (err) {
                 throw err;
             } else {
-                //collection.group(['location'], {}, {}, "function(doc, prev){}", true, function (err, item_list) {
-                collection.distinct('location', function (err, item_list) {
+                collection.group(['location', 'type'], {}, {'beginTimestamp':0, 'latestTimestamp':0, 'authid':'', 'count':0}, getMinMaxForGroup, true, function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred :' + err);
                         res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
                     } else {
-                        //console.log(item_list);
                         res.send(JSON.stringify({ jsonrpc: "2.0", result: item_list, id: id_val }));
                     }
                 });
@@ -258,65 +227,27 @@ exports.getLocation = function (req, res) {
 
     } catch (e) {
         res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
-        console.log("失敗 (getLocation)：" + e);
+        console.log("失敗 (getMonitorList)：" + e);
     }
 
 };
 
-// typeデータ一覧の取得API
-exports.getType = function (req, res) {
-    try {
-        var id_val = req.body.id;
-
-        db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
-            if (err) {
-                throw err;
-            } else {
-                //collection.group(['type'], {}, {}, "function(doc, prev){}", true, function (err, item_list) {
-                collection.distinct('type', function (err, item_list) {
-                    if (err) {
-                        console.log('error: An error has occurred :' + err);
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
-                    } else {
-                        //console.log(item_list);
-                        res.send(JSON.stringify({ jsonrpc: "2.0", result: item_list, id: id_val }));
-                    }
-                });
-            }
-        });
-
-    } catch (e) {
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
-        console.log("失敗 (getType)：" + e);
+// DBのgroup取得時に呼び出す、timestampの最大最少を求める関数
+function getMinMaxForGroup(obj, prev) {
+    if(prev.count==0) {
+        prev.beginTimestamp = obj.timestamp;
+        prev.latestTimestamp = obj.timestamp;
     }
 
-};
-
-// locationとtypeの組み合わせ一覧の取得API
-exports.getLocationAndType = function (req, res) {
-    try {
-        var id_val = req.body.id;
-
-        db.collection(Const.DB_TABLE_RAWDATA, function (err, collection) {
-            if (err) {
-                throw err;
-            } else {
-                collection.group(['location', 'type'], {}, {}, "function(doc, prev){}", true, function (err, item_list) {
-                    if (err) {
-                        console.log('error: An error has occurred :' + err);
-                        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: err }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
-                    } else {
-                        res.send(JSON.stringify({ jsonrpc: "2.0", result: item_list, id: id_val }));
-                    }
-                });
-            }
-        });
-
-    } catch (e) {
-        res.send(JSON.stringify({ jsonrpc: "2.0", error: { code: Const.RPC_INTERNAL_ERROR, message: String(e) }, id: id_val }), Const.HTTP_STATUS_SERVER_ERROR);
-        console.log("失敗 (getLocationAndType)：" + e);
+    if(prev.beginTimestamp > obj.timestamp) {
+        prev.beginTimestamp = obj.timestamp; 
+    }
+    if(prev.latestTimestamp < obj.timestamp) {
+        prev.latestTimestamp = obj.timestamp; 
     }
 
+    prev.authid = obj.authid;
+    prev.count++;
 };
 
 // DB検索キーの取得
@@ -324,88 +255,38 @@ exports.getLocationAndType = function (req, res) {
 function　getRawDataSortKey(params_val) {
     var p_location = params_val.location;
     var p_type = params_val.type;
-    var p_count = params_val.count;
-    var key = null;
+    var p_beginTime = params_val.beginTimestamp;
+    var p_endTime = params_val.endTimestamp;
+    var key = {};
 
-    if (Const.isNull(p_count)) {
-        if (Const.isNull(p_location)) {
-            if (Const.isNull(p_type)) {
-                key = null;
-            } else {
-                key = { type: p_type };
-            }
+    // Location : 位置情報(サーバ情報)
+    if (!Const.isNull(p_location)) {
+        key.location = {$in : p_location};
+    }
+
+    // Type : 情報種別
+    if (!Const.isNull(p_type)) {
+        key.type = {$in : p_type };
+    }
+
+    // entrytime     : 登録時刻
+    if (!Const.isNull(p_beginTime) || !Const.isNull(p_endTime)) {
+        if (Const.isNull(p_beginTime)) {
+            // ケース１：endTimestampのみ指定
+            var end_time = new Date(p_endTime);
+            key.timestamp = {$lte: end_time};
+        } else if (Const.isNull(p_endTime)) {
+            // ケース１：beginTimestampのみ指定
+            var begin_time = new Date(p_beginTime);
+            key.timestamp = {$gt: begin_time};
         } else {
-            if (Const.isNull(p_type)) {
-                key = { location: p_location };
-            } else {
-                key = { location: p_location, type: p_type };
-            }
-        }            
-    } else {
-        var sortTime = new Date();
-        sortTime.setMilliseconds(0);
-        sortTime.setTime(sortTime.getTime() - (1000 * p_count));     // p_count秒前から検索
-        if (Const.isNull(p_location)) {
-            if (Const.isNull(p_type)) {
-                key = { entrytime: { $gt: sortTime} };
-            } else {
-                key = { type: p_type, entrytime: { $gt: sortTime} };
-            }
-        } else {
-            if (Const.isNull(p_type)) {
-                key = { location: p_location, entrytime: { $gt: sortTime} };
-            } else {
-                key = { location: p_location, type: p_type, entrytime: { $gt: sortTime} };
-            }
+            // ケース３：beginTimestamp、endTimestamp双方指定
+            var begin_time = new Date(p_beginTime);
+            var end_time = new Date(p_endTime);
+            key.timestamp = {$gt: begin_time, $lte: end_time};
         }
     }
 
+    console.log(JSON.stringify(key));
     return key;
 }
-
-// datatypeによる取得一覧の集計
-// 戻り値：計算結果　エラー時=null データなし=NaN
-function　getCalculateData(item_list,p_datatype) {
-    var caldata=null;
-    var tmpdata;
-    var count = item_list.length;
-
-    try {
-        if( count>0 ) {
-            caldata = Number(item_list[0].data);
-        } else {
-            caldata = NaN;
-        }
-        if (p_datatype == "max") {          // 最大値
-            for (var i = 1; i < count; i++) {
-                tmpdata = Number(item_list[i].data);
-                if( caldata<tmpdata ) {
-                    caldata = tmpdata ;
-                }
-            }
-        } else if (p_datatype == "min") {   // 最小値
-            for (var i = 1; i < count; i++) {
-                tmpdata = Number(item_list[i].data);
-                if( caldata>tmpdata ) {
-                    caldata = tmpdata ;
-                }
-            }
-        } else if (p_datatype == "ave") {   // 平均
-            for (var i = 1; i < count; i++) {
-                caldata += Number(item_list[i].data);
-            }
-            if (!isNaN(caldata)) {
-                caldata /= count;
-            }
-        } else {                            // その他？
-            caldata = null;
-        }
-
-        return caldata;
-
-    } catch (e) {
-        console.log("失敗 (getCalculateData)：" + e);
-        return null;
-    }
-}
-

@@ -25,21 +25,15 @@ exports.getJsonData = function (req, res) {
         } else if (method_val == "getRawData") {
             // 指定rawデータの取得
             rawData.getRawData(req, res);
-        } else if (method_val == "checkRawData") {
-            // 指定rawデータの比較
-            rawData.checkRawData(req, res);
+        } else if (method_val == "getLatestData") {
+            // 指定rawデータの取得
+            rawData.getLatestData(req, res);
         } else if (method_val == "getRawDataList") {
             // 指定rawデータリストの取得
             rawData.getRawDataList(req, res);
-        } else if (method_val == "getLocationList") {
-            // locationデータ一覧の取得
-            rawData.getLocation(req, res);
-        } else if (method_val == "getTypeList") {
-            // typeデータ一覧の取得
-            rawData.getType(req, res);
-        } else if (method_val == "getLocationAndTypeList") {
-            // locationとtypeの組み合わせ一覧の取得
-            rawData.getLocationAndType(req, res);
+        } else if (method_val == "getMonitorList") {
+            // Monitor情報一覧の取得
+            rawData.getMonitorList(req, res);
         } else {
             // ないAPI？
             msg = "unkown function :" + method_val;
