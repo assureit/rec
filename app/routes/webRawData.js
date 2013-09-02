@@ -2,7 +2,7 @@ var http = require('http');
 var url = require('url');
 var mongo = require('mongodb');
 var Const = require('../public/const');
-var fs = require('fs');
+var async = require('async');
 
 //---------------------------------
 // WEB画面表示 rawデータ用
@@ -27,7 +27,7 @@ exports.list = function (req, res) {
         var key = null;
         var queryStr = "";
         var sellocation = url.parse(req.url, true).query.location;
-        if (sellocation!=undefined && sellocation!=null && sellocation!='') {
+        if ( !Const.isNull(sellocation) ) {
             key = { location: sellocation };
             queryStr = 'location=' + sellocation;
         }
@@ -40,7 +40,7 @@ exports.list = function (req, res) {
                     nowPage = parseInt((totalList - 1) / pageLimit);
                 }
 
-                collection.find(key, { _id: 0, entrytime: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
+                collection.find(key, { _id: 0 }).sort(order).limit(pageLimit).skip(nowPage * pageLimit).toArray(function (err, item_list) {
                     if (err) {
                         console.log('error: An error has occurred');
                         throw err;
@@ -78,7 +78,7 @@ exports.download = function (req, res) {
 
         var key = null;
         var sellocation = url.parse(req.url, true).query.location;
-        if (sellocation!=undefined && sellocation!=null && sellocation!='') {
+        if ( !Const.isNull(sellocation) ) {
             key = { location: sellocation };
         }
         var order = { _id: -1 };      // -1:desc 1:asc
@@ -93,7 +93,7 @@ exports.download = function (req, res) {
                     var filename = Const.DB_TABLE_RAWDATA + '_' + Const.getDateString() +'.json';
                     res.set('Content-Disposition','attachment; filename="' + filename + '"');
                     res.setHeader('Content-Type', 'text/json; charset=utf8');
-                            
+                      
                     res.write( JSON.stringify(item_list) );
                     //item_list.forEach(function(item) {
                     //    res.write( JSON.stringify(item) + '\n' );
