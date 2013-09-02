@@ -44,7 +44,7 @@ exports.getDateString = function() {
 
 // 日付文字列の取得 [unixtime]
 exports.getUnixtimeString = function() {
-    var dateStr = Math.floor(new Date/1000);
+    var dateStr = Math.floor(new Date);
     return String(dateStr);
 };
 
